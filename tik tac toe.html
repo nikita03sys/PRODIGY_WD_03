@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe AI</title>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        .board { display: grid; grid-template-columns: repeat(3, 100px); gap: 5px; justify-content: center; }
+        .cell { width: 100px; height: 100px; font-size: 2em; display: flex; align-items: center; justify-content: center; border: 1px solid #000; cursor: pointer; }
+        .cell.taken { cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <h1>Tic-Tac-Toe</h1>
+    <div class="board" id="board"></div>
+    <h2 id="status"></h2>
+    <script>
+        const board = document.getElementById("board");
+        const status = document.getElementById("status");
+        let gameBoard = Array(9).fill(null);
+        let human = "X", ai = "O", currentPlayer = human;
+
+        function renderBoard() {
+            board.innerHTML = "";
+            gameBoard.forEach((cell, index) => {
+                const div = document.createElement("div");
+                div.classList.add("cell");
+                if (cell) div.classList.add("taken");
+                div.textContent = cell || "";
+                div.addEventListener("click", () => makeMove(index));
+                board.appendChild(div);
+            });
+        }
+
+        function makeMove(index) {
+            if (gameBoard[index] || checkWinner(gameBoard)) return;
+            gameBoard[index] = currentPlayer;
+            renderBoard();
+            let winner = checkWinner(gameBoard);
+            if (winner) return endGame(winner);
+            currentPlayer = currentPlayer === human ? ai : human;
+            if (currentPlayer === ai) setTimeout(aiMove, 500);
+        }
+
+        function aiMove() {
+            let bestMove = minimax(gameBoard, ai).index;
+            gameBoard[bestMove] = ai;
+            renderBoard();
+            let winner = checkWinner(gameBoard);
+            if (winner) return endGame(winner);
+            currentPlayer = human;
+        }
+
+        function checkWinner(board) {
+            const winPatterns = [
+                [0,1,2], [3,4,5], [6,7,8],
+                [0,3,6], [1,4,7], [2,5,8],
+                [0,4,8], [2,4,6]
+            ];
+            for (let pattern of winPatterns) {
+                let [a, b, c] = pattern;
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) 
+                    return board[a];
+            }
+            return board.includes(null) ? null : "Draw";
+        }
+
+        function endGame(winner) {
+            status.textContent = winner === "Draw" ? "It's a Draw!" : `${winner} Wins!`;
+            board.style.pointerEvents = "none";
+        }
+
+        function minimax(board, player) {
+            let emptyCells = board.map((v, i) => v === null ? i : null).filter(v => v !== null);
+            let winner = checkWinner(board);
+            if (winner === ai) return { score: 10 };
+            if (winner === human) return { score: -10 };
+            if (emptyCells.length === 0) return { score: 0 };
+
+            let moves = [];
+            for (let i of emptyCells) {
+                let move = { index: i };
+                board[i] = player;
+                move.score = player === ai ? minimax(board, human).score : minimax(board, ai).score;
+                board[i] = null;
+                moves.push(move);
+            }
+
+            return moves.reduce((best, move) =>
+                (player === ai ? move.score > best.score : move.score < best.score) ? move : best
+            );
+        }
+
+        renderBoard();
+    </script>
+</body>
+</html>
